@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Алиса 🦊 — пойдём на свидание?</title>
+<style>
+  /* ===== БАЗА: тёплые лисьи тона + красный акцент Valorant ===== */
+  :root {
+    --fox1: #ff8a3d;   /* лисье оранжевое */
+    --fox2: #ffb35c;
+    --vlt:  #ff4655;   /* красный Valorant */
+    --cream: #fff4e8;
+    --text: #5a3a24;
+    --muted: #b07a56;
+    --title: #c25e1f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #fff8ef 0%, #ffe9d6 55%, #ffdfc7 100%);
+    color: var(--text);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    min-height: 100dvh;
+    padding: calc(24px + env(safe-area-inset-top)) 20px env(safe-area-inset-bottom);
+    position: relative; overflow: hidden;
+  }
+
+  .hearts { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .heart { position: absolute; opacity: .4; animation: float-up linear infinite; }
+  @keyframes float-up {
+    0%   { transform: translateY(110vh) rotate(0deg); }
+    100% { transform: translateY(-10vh) rotate(360deg); }
+  }
+
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 24px 24px calc(20px + 48px + env(safe-area-inset-bottom)); text-align: center; z-index: 1;
+    opacity: 0; pointer-events: none; transition: opacity .5s ease; width: 100%;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; }
+
+  .title, h1 { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-weight: 600;
+    color: var(--title); margin: 0; line-height: 1.3; }
+  .subtitle { color: var(--muted); font-size: 1.02rem; margin: 0; line-height: 1.5; }
+
+  /* ===== фото-героиня (лисичка) ===== */
+  .fox-frame {
+    position: relative; width: 190px; height: 190px; border-radius: 24px;
+    background: #fff; padding: 8px; box-shadow: 0 14px 34px rgba(194,94,31,.28);
+    transform: rotate(-3deg);
+  }
+  .fox-frame img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; display: block; }
+  .fox-badge {
+    position: absolute; bottom: -12px; right: -12px; width: 46px; height: 46px; border-radius: 50%;
+    background: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.18); border: 2px solid #ffe0c2;
+  }
+  .corner { position: absolute; width: 26px; height: 26px; border: 2px solid var(--vlt); opacity: .75; }
+  .corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+  .corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+  .corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+  .corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+  .v-mark { position: absolute; bottom: 14px; right: 18px; z-index: 6; font-size: 11px; font-weight: 800;
+    letter-spacing: 2px; color: var(--vlt); opacity: .28; text-transform: uppercase; }
+
+  .btn {
+    font-size: 1.3rem; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, var(--vlt), #e0384a);
+    border: 3px solid #fff; border-radius: 50px; padding: 18px 44px; min-width: 150px;
+    text-align: center; line-height: 1; white-space: nowrap; cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+    box-shadow: 0 8px 24px rgba(201,53,41,.35); position: relative; z-index: 2;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-yes { width: 160px; animation: pulse 1.3s infinite; }
+  .btn-no {
+    background: #f6e8d8; color: var(--title); box-shadow: none; cursor: default;
+    border: 3px solid #fff; border-radius: 50px; font-weight: 800;
+    font-size: 1.3rem; padding: 18px 44px; width: 160px;
+    transition: left .1s ease-out, top .1s ease-out, transform .1s ease-out;
+    will-change: left, top; letter-spacing:.01em;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 8px 24px rgba(224,56,74,.35); }
+    50%     { box-shadow: 0 8px 42px rgba(255,70,85,.8); }
+  }
+  .btn-row { display: flex; justify-content: center; align-items: center; gap: 16px; width: 100%; }
+
+  /* ===== слайдеры даты/времени ===== */
+  .picker { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 20px; }
+  .picker-block { background: rgba(255,255,255,.88); border: 1px solid #ffe0c2; border-radius: 20px; padding: 18px 20px;
+    box-shadow: 0 6px 24px rgba(194,94,31,.12); }
+  .picker-block label { display: block; color: var(--muted); font-size: .82rem; letter-spacing: .05em; margin-bottom: 14px;
+    text-transform: uppercase; font-weight: 700; }
+  .picker-block label .fox { font-size: 14px; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 4px;
+    background: #ffd9ae; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
+    border-radius: 50%; background: linear-gradient(135deg, var(--fox1), var(--fox2));
+    border: 3px solid #fff; box-shadow: 0 2px 10px rgba(194,94,31,.45); cursor: pointer; }
+  input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--fox1);
+    border: 3px solid #fff; cursor: pointer; }
+  .range-value { text-align: center; font-size: 1.6rem; font-weight: 700; margin-top: 14px; color: var(--title); }
+
+  .btn.primary { width: 100%; max-width: 360px; background: linear-gradient(135deg, var(--fox2), var(--fox1));
+    box-shadow: 0 8px 24px rgba(194,94,31,.35); }
+
+  /* ===== финал ===== */
+  .final { gap: 16px; }
+  .final .big { font-size: 2.6rem; }
+  .final-photo { width: 120px; height: 120px; border-radius: 22px; object-fit: cover; box-shadow: 0 8px 22px rgba(0,0,0,.14); }
+  .meme { font-size: 2.6rem; line-height: 1; }
+  .chosen-box {
+    background: linear-gradient(135deg, var(--fox2), var(--fox1));
+    color: #fff; border-radius: 20px; padding: 20px 30px; font-size: 1.6rem; font-weight: 800;
+    box-shadow: 0 12px 32px rgba(194,94,31,.4); letter-spacing: .02em; line-height: 1.2;
+    font-family: Georgia, serif; font-style: italic;
+  }
+  .chosen-box .line2 { font-size: 1.05rem; font-weight: 700; opacity: .95; margin-top: 6px; font-style: normal; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="hearts" id="hearts"></div>
+
+<!-- ЭКРАН 1: приглашение с ловушкой -->
+<section class="screen active" id="screenInvite">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div class="fox-frame">
+    <img src="assets/couple.png" alt="Алиса">
+    <div class="fox-badge">🦊</div>
+  </div>
+  <p class="title" style="font-size:1.85rem; padding:0 6px;">Алиса, пойдёшь<br>со мной на свидание?</p>
+  <p class="subtitle">Ты — мой самый милый лисеныш  🦊<br>Я всё придумал. Просто скажи «да»</p>
+  <div class="btn-row" id="btnRow">
+    <button class="btn btn-yes" id="btnYes">Да 💖</button>
+  </div>
+  <div class="v-mark">valorant</div>
+</section>
+
+<!-- ЭКРАН 2: самостоятельный выбор даты и времени -->
+<section class="screen" id="screenDate">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <h1 style="font-size:1.7rem;">Когда тебе удобно?</h1>
+  <p class="subtitle" style="margin-bottom:0;">Подбери дату и время сама 😉</p>
+  <div class="picker">
+    <div class="picker-block">
+      <label><span class="fox">🦊</span> Дата</label>
+      <div class="range-row"><input type="range" id="daySlider" min="0" max="6" step="1" value="0"></div>
+      <div class="range-value" id="dayValue"></div>
+    </div>
+    <div class="picker-block">
+      <label><span class="fox">🦊</span> Время</label>
+      <div class="range-row"><input type="range" id="timeSlider" min="0" max="46" step="1" value="19"></div>
+      <div class="range-value" id="timeValue"></div>
+    </div>
+  </div>
+  <button class="btn primary" id="btnConfirm">Всё, я выбрала 💖</button>
+</section>
+
+<!-- ЭКРАН 3: подтверждение + фото -->
+<section class="screen final" id="screenFinal">
+  <div class="big">🚗</div>
+  <h1 style="font-size:1.6rem; margin:0;">Тогда договорились!</h1>
+  <p class="subtitle">Будь готова к этому времени — я заеду за тобой</p>
+  <div class="chosen-box">
+    <div id="finalDate"></div>
+    <div class="line2" id="finalTime"></div>
+  </div>
+  <div id="sendNote" style="font-size:.82rem; color:var(--muted); min-height:18px;"></div>
+  <div class="fox-frame" style="transform:rotate(3deg); width:120px; height:120px; padding:5px;">
+    <img src="assets/couple.png" alt="Алиса">
+    <div class="fox-badge" style="width:34px;height:34px;font-size:20px; bottom:-10px; right:-10px;">🦊</div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const he = document.getElementById('hearts');
+  for(let i=0;i<16;i++){
+    const s = document.createElement('div');
+    s.className='heart';
+    s.textContent=['🦊','💗','💕','🧡'][i%4];
+    s.style.left = (Math.random()*100)+'%';
+    s.style.animationDuration = (8+Math.random()*9)+'s';
+    s.style.animationDelay = (-Math.random()*11)+'s';
+    s.style.fontSize = (18+Math.random()*20)+'px';
+    he.appendChild(s);
+  }
+})();
+
+// ===== ЛОВУШКА: кнопка «Нет» быстрее курсора =====
+const noB = document.createElement('button');
+noB.className='btn btn-no';
+noB.textContent='Нет 🙅';
+document.getElementById('btnRow').appendChild(noB);
+let noRun = 0;
+function teleport(cx, cy){
+  noRun++;
+  noB.style.position='fixed'; noB.style.zIndex=50;
+  const bw = noB.offsetWidth, bh = noB.offsetHeight;
+  const pad = 14;
+  const xMax = window.innerWidth - bw - pad;
+  const yMax = window.innerHeight - bh - pad;
+  let x, y, guard = 0;
+  do {
+    x = pad + Math.random() * Math.max(pad, xMax - pad);
+    y = pad + Math.random() * Math.max(pad, yMax - pad);
+    guard++;
+  } while (guard < 40 && (Math.hypot(x + bw/2 - cx, y + bh/2 - cy) < 180));
+  noB.style.left = x + 'px';
+  noB.style.top = y + 'px';
+}
+document.addEventListener('mousemove', e => {
+  const r = noB.getBoundingClientRect();
+  if(!r.width) return;
+  const dx = (r.left + r.width/2) - e.clientX;
+  const dy = (r.top + r.height/2) - e.clientY;
+  if (Math.hypot(dx, dy) < 100) teleport(e.clientX, e.clientY);
+});
+noB.addEventListener('touchstart', (e)=>{ e.preventDefault(); const t=e.touches[0]; teleport(t.clientX,t.clientY); }, {passive:false});
+
+// ===== ДА -> выбор даты/времени =====
+document.getElementById('btnYes').addEventListener('click', ()=> show('screenDate'));
+
+// ===== СЛАЙДЕРЫ =====
+const daySlider=document.getElementById('daySlider'), dayValue=document.getElementById('dayValue');
+const timeSlider=document.getElementById('timeSlider'), timeValue=document.getElementById('timeValue');
+const DAYS=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+function dayOptions(){ const o=[],t=new Date(); for(let i=0;i<=6;i++){const d=new Date(t); d.setDate(t.getDate()+i); o.push(d);} return o; }
+const dateOpts=dayOptions();
+function fmtDate(d){
+  const t=new Date();
+  const same=d.getDate()===t.getDate()&&d.getMonth()===t.getMonth();
+  const tom=new Date(t); tom.setDate(t.getDate()+1);
+  const isTom=d.getDate()===tom.getDate()&&d.getMonth()===tom.getMonth()&&d.getFullYear()===tom.getFullYear();
+  return `${same?'Сегодня':isTom?'Завтра':DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+function renderDay(){ dayValue.textContent = fmtDate(dateOpts[+daySlider.value]); }
+function renderTime(){ const v=+timeSlider.value,h=Math.floor(v/2),m=(v%2)*30;
+  timeValue.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+daySlider.addEventListener('input',renderDay); timeSlider.addEventListener('input',renderTime);
+renderDay(); renderTime();
+
+// ===== ПОДТВЕРДИТЬ =====
+const SEND_EMAIL = 'a.orechov26062005@gmail.com';
+document.getElementById('btnConfirm').addEventListener('click', ()=>{
+  const d=dateOpts[+daySlider.value]; const v=+timeSlider.value;
+  const h=Math.floor(v/2),m=(v%2)*30;
+  const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  const dateStr=fmtDate(d);
+  document.getElementById('finalDate').textContent=dateStr;
+  document.getElementById('finalTime').textContent='в '+timeStr;
+  // отправляем выбор Антону на почту
+  const note=document.getElementById('sendNote');
+  note.textContent='Отправляю выбор Антону… ✉️';
+  fetch('https://formsubmit.co/ajax/'+SEND_EMAIL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify({
+      _subject:'🦊 Алиса выбрала свидание!',
+      _template:'table',
+      name:'Алиса',
+      date:dateStr,
+      time:'в '+timeStr,
+      message:'Алиса согласилась! Выбрала: '+dateStr+' в '+timeStr
+    })
+  }).then(async r=>{
+    let ok=false, msg='';
+    try{ const j=await r.json(); ok = j.success==='true'||j.success===true; msg=j.message||''; }
+    catch(e){ ok=r.ok; }
+    note.textContent = ok ? 'Готово! Выбор улетел Антону ✈️' : (
+      /activation|activate/i.test(msg)
+        ? 'Почти! Жми ссылку «Activate Form» в письме от FormSubmit на почте 🔑'
+        : 'Не улетело: проверь почту подтверждения'
+    );
+    show('screenFinal'); fireworks();
+  }).catch(()=>{
+    note.textContent='Неудачная отправка — сфоткай выбор 📸';
+    show('screenFinal');
+  });
+});
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active'); }
+
+// ===== конфетти =====
+function fireworks(){
+  const colors=['#ff4655','#ff8a3d','#ffb35c','#ff7f9c','#fff'];
+  for(let i=0;i<80;i++){
+    const p=document.createElement('div');
+    p.style.cssText=`position:fixed;left:50%;top:50%;width:10px;height:10px;background:${colors[i%5]};border-radius:2px;z-index:99;pointer-events:none;`;
+    document.body.appendChild(p);
+    const dx=(Math.random()*2-1)*300, dy=(Math.random()*-1)*220-60;
+    p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},
+      {transform:`translate(${dx}px,${dy}px) rotate(${Math.random()*720-360}deg)`,opacity:0}],
+      {duration:1400+Math.random()*800,easing:'cubic-bezier(0,0.8,0.2,1)',fill:'forwards'}).onfinish=()=>p.remove();
+  }
+}
+</script>
+</body>
+</html>
